@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>World Time Converter</title>
+
+<style>
+
+:root{
+    --bg:#0f172a;
+    --card:#1e293b;
+    --border:#334155;
+    --text:#f8fafc;
+    --muted:#94a3b8;
+    --accent:#3b82f6;
+    --success:#22c55e;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:"Segoe UI",sans-serif;
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    min-height:100vh;
+    color:var(--text);
+    padding:30px;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+}
+
+header{
+    text-align:center;
+    margin-bottom:30px;
+}
+
+h1{
+    font-size:2.5rem;
+    margin-bottom:10px;
+}
+
+.subtitle{
+    color:var(--muted);
+}
+
+.controls{
+    display:flex;
+    justify-content:center;
+    margin-bottom:25px;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+select{
+    padding:10px;
+    border-radius:8px;
+    border:none;
+    font-size:14px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:20px;
+}
+
+.card{
+    background:rgba(30,41,59,.95);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);
+    transition:.3s;
+}
+
+.card:hover{
+    transform:translateY(-3px);
+}
+
+.zone{
+    font-size:1.2rem;
+    font-weight:600;
+    margin-bottom:5px;
+}
+
+.date{
+    color:var(--muted);
+    font-size:.9rem;
+    margin-bottom:15px;
+}
+
+.time{
+    font-size:2rem;
+    font-weight:bold;
+    margin-bottom:15px;
+}
+
+input[type=time]{
+    width:100%;
+    padding:14px 16px;
+    font-size:18px;
+    font-weight:500;
+    font-family:"Segoe UI",sans-serif;
+    letter-spacing:0.5px;
+    border-radius:12px;
+    border:2px solid var(--border);
+    background:linear-gradient(145deg,#1e293b,#273449);
+    color:var(--text);
+    cursor:pointer;
+    transition:all 0.3s ease;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input[type=time]:hover{
+    border-color:var(--accent);
+    background:linear-gradient(145deg,#253347,#2d3f56);
+}
+
+input[type=time]:focus{
+    outline:none;
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(59,130,246,0.3),
+               inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input[type=time]::-webkit-calendar-picker-indicator{
+    filter:invert(1);
+    opacity:0.6;
+    cursor:pointer;
+    transition:opacity 0.2s ease;
+}
+
+input[type=time]:hover::-webkit-calendar-picker-indicator{
+    opacity:1;
+}
+
+.business{
+    margin-top:15px;
+    padding:6px 10px;
+    border-radius:999px;
+    display:inline-block;
+    font-size:12px;
+}
+
+.open{
+    background:var(--success);
+}
+
+.closed{
+    background:#64748b;
+}
+
+.footer{
+    text-align:center;
+    margin-top:30px;
+    color:var(--muted);
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+<h1>🌍 World Time Converter</h1>
+<div class="subtitle">
+Edit any time and all regions update automatically
+</div>
+</header>
+
+<div class="controls">
+<label>
+Time Format
+<select id="format">
+<option value="24">24 Hour</option>
+<option value="12">12 Hour</option>
+</select>
+</label>    
+</div>
+
+<div class="grid">
+
+<div class="card">
+<div class="zone">UK</div>
+<div class="date" id="bstDate"></div>
+<div class="time" id="bstTime"></div>
+<input type="time" id="bst">
+<div id="bstStatus"></div>
+</div>
+
+<div class="card">
+<div class="zone">US ET</div>
+<div class="date" id="etDate"></div>
+<div class="time" id="etTime"></div>
+<input type="time" id="et">
+<div id="etStatus"></div>
+</div>
+
+<div class="card">
+<div class="zone">US CT</div>
+<div class="date" id="ctDate"></div>
+<div class="time" id="ctTime"></div>
+<input type="time" id="ct">
+<div id="ctStatus"></div>
+</div>
+
+<div class="card">
+<div class="zone">India IST</div>
+<div class="date" id="istDate"></div>
+<div class="time" id="istTime"></div>
+<input type="time" id="ist">
+<div id="istStatus"></div>
+</div>
+
+</div>
+
+<div class="footer">
+</div>
+
+</div>
+
+<script>
+
+const zones = {
+    bst: 1,
+    et: -4,
+    ct: -5,
+    ist: 5.5
+};
+
+let updating = false;
+
+function pad(n){
+    return String(n).padStart(2,'0');
+}
+
+function formatTime(d){
+    return pad(d.getHours())+":"+pad(d.getMinutes());
+}
+
+function parseTimeToDate(timeStr, offsetHours){
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const d = new Date();
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+}
+
+function updateDisplays(){
+
+    const format =
+        document.getElementById('format').value;
+
+    Object.keys(zones).forEach(z => {
+
+        const input =
+            document.getElementById(z);
+
+        const timeStr = input.value;
+        if(!timeStr) return;
+
+        const value = parseTimeToDate(timeStr);
+
+        document.getElementById(
+            z + 'Date'
+        ).innerText =
+            new Date().toLocaleDateString(
+                undefined,
+                {
+                  weekday:'long',
+                  year:'numeric',
+                  month:'long',
+                  day:'numeric'
+                });
+
+        document.getElementById(
+            z + 'Time'
+        ).innerText =
+            value.toLocaleTimeString(
+                [],
+                {
+                  hour:'2-digit',
+                  minute:'2-digit',
+                  hour12: format === '12'
+                });
+
+        const hour = value.getHours();
+
+        const open =
+            hour >= 9 &&
+            hour < 17;
+
+        document.getElementById(
+            z + 'Status'
+        ).innerHTML =
+            open
+            ? '<span class="business open">Business Hours</span>'
+            : '<span class="business closed">Outside Business Hours</span>';
+
+    });
+}
+
+function calculate(sourceZone, value){
+
+    if(updating) return;
+
+    updating = true;
+
+    const sourceDate = parseTimeToDate(value);
+
+    const utc =
+        sourceDate.getTime() -
+        (zones[sourceZone] * 3600000);
+
+    Object.keys(zones).forEach(z => {
+
+        const converted =
+            new Date(
+                utc +
+                (zones[z] * 3600000)
+            );
+
+        document.getElementById(z).value =
+            formatTime(converted);
+
+    });
+
+    updateDisplays();
+    updating = false;
+}
+
+function initialize(){
+
+    const now = new Date();
+
+    const utc =
+        now.getTime() +
+        now.getTimezoneOffset()*60000;
+
+    Object.keys(zones).forEach(z => {
+
+        const d =
+            new Date(
+                utc +
+                (zones[z] * 3600000)
+            );
+
+        document.getElementById(z).value =
+            formatTime(d);
+
+        document.getElementById(z)
+            .addEventListener(
+                'change',
+                e => calculate(z,e.target.value)
+            );
+    });
+
+    updateDisplays();
+}
+
+setInterval(updateDisplays,1000);
+
+document
+.getElementById('format')
+.addEventListener(
+    'change',
+    updateDisplays
+);
+
+initialize();
+
+</script>
+
+</body>
+</html>
